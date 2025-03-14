@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from dotenv import load_dotenv
 from fastapi.responses import PlainTextResponse, JSONResponse
+from starlette.responses import Response
 import httpx
 import os
 import uvicorn
@@ -24,7 +25,7 @@ async def get_job_details(query):
             return response.json()
     return 0
 
-@app.get("/job_metrics", response_class=PlainTextResponse)
+@app.get("/job_metrics")
 async def job_metrics():
     successful = await get_job_details("?status=successful")
     failure = await get_job_details("?status=failed")
@@ -36,7 +37,7 @@ async def job_metrics():
     # TYPE ansible_job_template_run_failure counter
     ansible_job_template_run_failure {failure['count']}
     """
-    return job_metrics_prom
+    return Response(content=job_metrics_prom, media_type="text/plain")
 
 if __name__ == "__main__":
     uvicorn.run(app, host='127.0.0.1', port=5000)
