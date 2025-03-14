@@ -35,7 +35,7 @@ async def job_metrics():
 
     # HELP ansible_job_template_run_failure Number of failed template runs
     # TYPE ansible_job_template_run_failure counter
-    ansible_job_template_run_success {failure['count']}
+    ansible_job_template_run_failure {failure['count']}
     """
     return job_metrics_prom
 
