@@ -1,5 +1,6 @@
 import httpx
 from dotenv import load_dotenv
+from datetime import datetime
 import os
 
 load_dotenv()
@@ -14,8 +15,7 @@ def get_aap():
     url = f"https://{AAP_URL}{API_ENDPOINT}"
     print(url)
     response = httpx.get(url, verify=False, headers=headers)
-    print(response.json())
-
+    return response
 def get_job_details():
     url = f"https://{AAP_URL}{API_ENDPOINT}"
     headers = {"Authorization": f"Bearer {AAP_TOKEN}"}
