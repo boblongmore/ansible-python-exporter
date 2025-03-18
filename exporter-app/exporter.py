@@ -71,7 +71,7 @@ ansible_job_template_run_failure {failure['count']}
 ansible_job_template_hours_saved {float(hours_saved):.2f}
 # HELP ansible_job_template_money_saved Amount of money saved by automating tasks
 # TYPE ansible_job_template_money_saved counter
-ansible_job_template_money_saved ${float(money_saved):,.2f}
+ansible_job_template_money_saved {float(money_saved):,.2f}
     """
     return job_metrics_prom
 
