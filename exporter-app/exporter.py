@@ -82,8 +82,8 @@ ansible_job_template_hours_saved {float(hours_saved):.2f}
 # TYPE ansible_job_template_money_saved counter
 ansible_job_template_money_saved {float(money_saved):,.2f}
 # HELP ansible_job_template_irr_calc Calculated IRR for three years
-# TYPE ansible_job_template_irr_calc counter
-ansible_job_template_irr_calc {float(irr_calc):.2%}
+# TYPE ansible_job_template_irr_calc gauge
+ansible_job_template_irr_calc {float(irr_calc):.2f}
     """
     return job_metrics_prom
 
