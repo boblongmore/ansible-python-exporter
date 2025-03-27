@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from dotenv import load_dotenv
 from fastapi.responses import PlainTextResponse, JSONResponse
 from datetime import datetime
+import numpy_financial as npf
 import httpx
 import os
 import uvicorn
@@ -13,8 +14,8 @@ JOB_ID = 20
 API_ENDPOINT=f"/api/controller/v2/job_templates/{JOB_ID}/jobs/"
 EST_MANUAL_TIME = 60 # Time to do the task manually in minutes
 EST_ENG_COST = 65 # Hourly rate of an engineer
+INITIAL_INVESTEMENT = 500000
 
-print(API_ENDPOINT)
 
 app = FastAPI()
 
@@ -51,6 +52,12 @@ async def auto_money_saved(successful):
     automation_cost = (automation_time / 60) * EST_ENG_COST
     return (manual_cost - automation_cost)
 
+async def calc_irr(successful):
+    savings = auto_money_saved(successful)
+    irr = npf.irr([INITIAL_INVESTEMENT, savings, savings, savings])
+    irr_value = irr * 100
+    return irr_value
+
 
 
 @app.get("/job_metrics", response_class=PlainTextResponse)
@@ -59,6 +66,7 @@ async def job_metrics():
     failure = await get_job_details("?status=failed")
     hours_saved = await auto_hours_saved(successful)
     money_saved = await auto_money_saved(successful)
+    irr_calc = await calc_irr(successful)
     job_metrics_prom = f"""
 # HELP ansible_job_template_run_success Number of successful template runs
 # TYPE ansible_job_template_run_success counter
@@ -72,6 +80,9 @@ ansible_job_template_hours_saved {float(hours_saved):.2f}
 # HELP ansible_job_template_money_saved Amount of money saved by automating tasks
 # TYPE ansible_job_template_money_saved counter
 ansible_job_template_money_saved {float(money_saved):,.2f}
+# HELP ansible_job_template_money_saved Calculated IRR for three years
+# TYPE ansible_job_template_money_saved counter
+ansible_job_template_money_saved {float(irr_calc):.2%}
     """
     return job_metrics_prom
 
