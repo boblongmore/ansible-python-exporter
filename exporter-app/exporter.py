@@ -14,6 +14,7 @@ JOB_ID = 20
 API_ENDPOINT=f"/api/controller/v2/job_templates/{JOB_ID}/jobs/"
 EST_MANUAL_TIME = 60 # Time to do the task manually in minutes
 EST_ENG_COST = 65 # Hourly rate of an engineer
+INITIAL_INVESTMENT = -500000
 
 
 
@@ -54,7 +55,7 @@ async def auto_money_saved(successful):
 
 async def calc_irr(successful):
     savings = await auto_money_saved(successful)
-    irr = npf.irr([INITIAL_INVESTEMENT, savings, savings, savings])
+    irr = npf.irr([INITIAL_INVESTMENT, savings, savings, savings])
     irr_value = irr * 100
     return irr_value
 
