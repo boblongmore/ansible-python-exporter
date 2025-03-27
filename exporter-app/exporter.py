@@ -80,9 +80,9 @@ ansible_job_template_hours_saved {float(hours_saved):.2f}
 # HELP ansible_job_template_money_saved Amount of money saved by automating tasks
 # TYPE ansible_job_template_money_saved counter
 ansible_job_template_money_saved {float(money_saved):,.2f}
-# HELP ansible_job_template_money_saved Calculated IRR for three years
-# TYPE ansible_job_template_money_saved counter
-ansible_job_template_money_saved {float(irr_calc):.2%}
+# HELP ansible_job_template_irr_calc Calculated IRR for three years
+# TYPE ansible_job_template_irr_calc counter
+ansible_job_template_irr_calc {float(irr_calc):.2%}
     """
     return job_metrics_prom
 
