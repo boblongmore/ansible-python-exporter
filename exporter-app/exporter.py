@@ -38,7 +38,7 @@ async def auto_hours_saved(successful):
         duration = finish - start
         run_duration_total += duration.seconds
     automation_time = run_duration_total / 60
-    return (manual_time / 60) - (automation_time / 60)
+    return ((manual_time / 60) - (automation_time / 60)), finish
 
 async def auto_money_saved(successful):
     manual_time = EST_MANUAL_TIME * successful['count']
@@ -65,7 +65,7 @@ async def calc_irr(successful):
 async def job_metrics():
     successful = await get_job_details("?status=successful")
     failure = await get_job_details("?status=failed")
-    hours_saved = await auto_hours_saved(successful)
+    hours_saved, finish_month = await auto_hours_saved(successful)
     money_saved = await auto_money_saved(successful)
     irr_calc = await calc_irr(successful)
     job_metrics_prom = f"""
@@ -84,6 +84,9 @@ ansible_job_template_money_saved {float(money_saved):,.2f}
 # HELP ansible_job_template_irr_calc Calculated IRR for three years
 # TYPE ansible_job_template_irr_calc gauge
 ansible_job_template_irr_calc {float(irr_calc):.2f}
+# HELP ansible_job_template_finish_time when template ran successfully
+# TYPE ansible_job_template_finish_time data
+ansible_job_template_finish_time {finish_month}
     """
     return job_metrics_prom
 
