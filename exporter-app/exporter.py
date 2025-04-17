@@ -85,7 +85,7 @@ ansible_job_template_money_saved {float(money_saved):,.2f}
 # TYPE ansible_job_template_irr_calc gauge
 ansible_job_template_irr_calc {float(irr_calc):.2f}
 # HELP ansible_job_template_finish_time when template ran successfully
-# TYPE ansible_job_template_finish_time data
+# TYPE ansible_job_template_finish_time unknown
 ansible_job_template_finish_time {finish_month}
     """
     return job_metrics_prom
