@@ -70,7 +70,7 @@ async def calc_roi(successful):
     TC = initial_investment + SUBS + MAINTENANCE
     NB = TC - benefits
     roi = (NB / TC) * 100
-    return roi
+    return roi, NB, TC
 
 @app.get("/job_metrics", response_class=PlainTextResponse)
 async def job_metrics():
@@ -79,7 +79,7 @@ async def job_metrics():
     hours_saved = await auto_hours_saved(successful)
     money_saved = await auto_money_saved(successful)
     irr_calc = await calc_irr(successful)
-    roi = await calc_roi(successful)
+    roi, NB, TC = await calc_roi(successful)
     job_metrics_prom = f"""
 # HELP ansible_job_template_run_success Number of successful template runs
 # TYPE ansible_job_template_run_success counter
@@ -99,6 +99,13 @@ ansible_job_template_irr_calc {float(irr_calc):.2f}
 # HELP ansible_job_template_roi_calc Return on Investment for project
 # TYPE ansible_job_template_roi_calc gauge
 ansible_job_template_roi_calc {float(roi):.2f}
+# HELP project_investment_cost Total cost of investment
+# TYPE project_investment_cost counter
+project_investment_cost {float(TC):.2f}
+# HELP project_automation_gain Cumulative money saved
+# TYPE project_automation_gain counter
+project_automation_gain {float(NB):.2f}
+
     """
     return job_metrics_prom
 
