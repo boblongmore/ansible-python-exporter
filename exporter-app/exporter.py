@@ -10,11 +10,15 @@ import uvicorn
 load_dotenv()
 AAP_URL = os.getenv('aap_server')
 AAP_TOKEN = os.getenv('aap_token')
-JOB_ID = 20
-API_ENDPOINT=f"/api/controller/v2/job_templates/{JOB_ID}/jobs/"
+JOB_ID = 51 # Replace with your job template ID
+API_ENDPOINT=f"/api/controller/v2/workflow_job_templates/{JOB_ID}/workflow_jobs/"
 EST_MANUAL_TIME = 60 # Time to do the task manually in minutes
 EST_ENG_COST = 65 # Hourly rate of an engineer
 INITIAL_INVESTMENT = -500000
+SUBS = 20000
+MAINTENANCE = 52 * EST_ENG_COST # Estimated one hour a week of maintenance on average
+COST_OF_MISTAKES = ((3*EST_ENG_COST) * 12) # Estimate three engineers on 4 3-hour calls a year
+IQ = (EST_ENG_COST * 12) # Estimate we will save 12 hours a year because of improved quality
 
 
 
@@ -59,7 +63,14 @@ async def calc_irr(successful):
     irr_value = irr * 100
     return irr_value
 
-
+async def calc_roi(successful):
+    MS = await auto_money_saved(successful)
+    benefits = MS + COST_OF_MISTAKES + IQ # Realtime money saved plus estimated cost of mistakes and quality saved
+    initial_investment = -INITIAL_INVESTMENT
+    TC = initial_investment + SUBS + MAINTENANCE
+    NB = TC - benefits
+    roi = (NB / TC) * 100
+    return roi
 
 @app.get("/job_metrics", response_class=PlainTextResponse)
 async def job_metrics():
@@ -68,6 +79,7 @@ async def job_metrics():
     hours_saved = await auto_hours_saved(successful)
     money_saved = await auto_money_saved(successful)
     irr_calc = await calc_irr(successful)
+    roi = await calc_roi(successful)
     job_metrics_prom = f"""
 # HELP ansible_job_template_run_success Number of successful template runs
 # TYPE ansible_job_template_run_success counter
@@ -84,6 +96,9 @@ ansible_job_template_money_saved {float(money_saved):,.2f}
 # HELP ansible_job_template_irr_calc Calculated IRR for three years
 # TYPE ansible_job_template_irr_calc gauge
 ansible_job_template_irr_calc {float(irr_calc):.2f}
+# HELP ansible_job_template_roi_calc Return on Investment for project
+# TYPE ansible_job_template_roi_calc gauge
+ansible_job_template_roi_calc {float(roi):.2f}
     """
     return job_metrics_prom
 
