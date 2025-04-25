@@ -10,7 +10,7 @@ import uvicorn
 load_dotenv()
 AAP_URL = os.getenv('aap_server')
 AAP_TOKEN = os.getenv('aap_token')
-JOB_ID = 51 # Replace with your job template ID
+JOB_ID = 46 # Replace with your job template ID
 API_ENDPOINT=f"/api/controller/v2/workflow_job_templates/{JOB_ID}/workflow_jobs/"
 EST_MANUAL_TIME = 60 # Time to do the task manually in minutes
 EST_ENG_COST = 65 # Hourly rate of an engineer
