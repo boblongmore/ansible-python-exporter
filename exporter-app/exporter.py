@@ -99,12 +99,10 @@ ansible_job_template_irr_calc {float(irr_calc):.2f}
 # HELP ansible_job_template_roi_calc Return on Investment for project
 # TYPE ansible_job_template_roi_calc gauge
 ansible_job_template_roi_calc {float(roi):.2f}
-# HELP project_investment_cost Total cost of investment
-# TYPE project_investment_cost counter
-project_investment_cost {float(TC):.2f}
-# HELP project_automation_gain Cumulative money saved
-# TYPE project_automation_gain counter
-project_automation_gain {float(NB):.2f}
+# HELP ansible_job_template_roi_prediction Return on Investment for project
+# TYPE ansible_job_template_roi_prediction gauge
+ansible_job_template_roi_prediction {float(roi * 12):.2f}
+
 
     """
     return job_metrics_prom
