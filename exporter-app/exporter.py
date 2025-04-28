@@ -6,6 +6,7 @@ import numpy_financial as npf
 import httpx
 import os
 import uvicorn
+import asyncio
 
 load_dotenv()
 AAP_URL = os.getenv('aap_server')
@@ -23,6 +24,15 @@ IQ = (EST_ENG_COST * 40) # Estimate we will save 40 hours a year because of impr
 
 
 app = FastAPI()
+
+metrics_cache = {
+    "successful": 0,
+    "failure": 0,
+    "hours_saved": 0.0,
+    "money_saved": 0.0,
+    "irr_calc": 0.0,
+    "roi": 0.0,
+}
 
 async def get_job_details(query):
     url = f"https://{AAP_URL}{API_ENDPOINT}{query}"
@@ -72,40 +82,60 @@ async def calc_roi(successful):
     roi = (NB / TC) * 100
     return roi, NB, TC
 
+async def refresh_metrics():
+    while True:
+        try:
+            successful = await get_job_details("?status=successful")
+            failure = await get_job_details("?status=failed")
+            hours_saved = await auto_hours_saved(successful)
+            money_saved = await auto_money_saved(successful)
+            irr_calc = await calc_irr(successful)
+            roi, _, _ = await calc_roi(successful)
+
+            # Update the cache
+            metrics_cache["successful"] = successful['count']
+            metrics_cache["failure"] = failure['count']
+            metrics_cache["hours_saved"] = hours_saved
+            metrics_cache["money_saved"] = money_saved
+            metrics_cache["irr_calc"] = irr_calc
+            metrics_cache["roi"] = roi
+
+        except Exception as e:
+            print(f"Error refreshing metrics: {e}")
+
+        # Wait 300 seconds (5 minutes) before refreshing again
+        await asyncio.sleep(300)
+
+@app.lifespan("startup")
+async def startup_event():
+    # Launch the background refresher
+    asyncio.create_task(refresh_metrics())
+
 @app.get("/job_metrics", response_class=PlainTextResponse)
 async def job_metrics():
-    successful = await get_job_details("?status=successful")
-    failure = await get_job_details("?status=failed")
-    hours_saved = await auto_hours_saved(successful)
-    money_saved = await auto_money_saved(successful)
-    irr_calc = await calc_irr(successful)
-    roi, NB, TC = await calc_roi(successful)
-    job_metrics_prom = f"""
+    return f"""
 # HELP ansible_job_template_run_success Number of successful template runs
-# TYPE ansible_job_template_run_success counter
-ansible_job_template_run_success {successful['count']}
+# TYPE ansible_job_template_run_success gauge
+ansible_job_template_run_success {metrics_cache["successful"]}
 # HELP ansible_job_template_run_failure Number of failed template runs
-# TYPE ansible_job_template_run_failure counter
-ansible_job_template_run_failure {failure['count']}
+# TYPE ansible_job_template_run_failure gauge
+ansible_job_template_run_failure {metrics_cache["failure"]}
 # HELP ansible_job_template_hours_saved Number of hours saved by automating tasks
-# TYPE ansible_job_template_hours_saved counter
-ansible_job_template_hours_saved {float(hours_saved):.2f}
+# TYPE ansible_job_template_hours_saved gauge
+ansible_job_template_hours_saved {metrics_cache["hours_saved"]:.2f}
 # HELP ansible_job_template_money_saved Amount of money saved by automating tasks
-# TYPE ansible_job_template_money_saved counter
-ansible_job_template_money_saved {float(money_saved):,.2f}
+# TYPE ansible_job_template_money_saved gauge
+ansible_job_template_money_saved {metrics_cache["money_saved"]:.2f}
 # HELP ansible_job_template_irr_calc Calculated IRR for three years
 # TYPE ansible_job_template_irr_calc gauge
-ansible_job_template_irr_calc {float(irr_calc):.2f}
+ansible_job_template_irr_calc {metrics_cache["irr_calc"]:.2f}
 # HELP ansible_job_template_roi_calc Return on Investment for project
 # TYPE ansible_job_template_roi_calc gauge
-ansible_job_template_roi_calc {float(roi):.2f}
+ansible_job_template_roi_calc {metrics_cache["roi"]:.2f}
 # HELP ansible_job_template_roi_prediction Return on Investment for project
 # TYPE ansible_job_template_roi_prediction gauge
-ansible_job_template_roi_prediction {float(roi):.2f}
-
-
-    """
-    return job_metrics_prom
+ansible_job_template_roi_prediction {metrics_cache["roi"]:.2f}
+"""
 
 if __name__ == "__main__":
     uvicorn.run(app, host='127.0.0.1', port=5000)
