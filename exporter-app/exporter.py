@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from dotenv import load_dotenv
 from fastapi.responses import PlainTextResponse, JSONResponse
 from datetime import datetime
+from contextlib import asynccontextmanager
 import numpy_financial as npf
 import httpx
 import os
@@ -23,7 +24,7 @@ IQ = (EST_ENG_COST * 40) # Estimate we will save 40 hours a year because of impr
 
 
 
-app = FastAPI()
+
 
 metrics_cache = {
     "successful": 0,
@@ -106,10 +107,13 @@ async def refresh_metrics():
         # Wait 300 seconds (5 minutes) before refreshing again
         await asyncio.sleep(300)
 
-@app.lifespan("startup")
-async def startup_event():
-    # Launch the background refresher
-    asyncio.create_task(refresh_metrics())
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    task = asyncio.create_task(refresh_metrics())
+    yield
+    task.cancel()
+
+app = FastAPI(lifespan=lifespan)
 
 @app.get("/job_metrics", response_class=PlainTextResponse)
 async def job_metrics():
