@@ -14,11 +14,11 @@ JOB_ID = 46 # Replace with your job template ID
 API_ENDPOINT=f"/api/controller/v2/workflow_job_templates/{JOB_ID}/workflow_jobs/"
 EST_MANUAL_TIME = 60 # Time to do the task manually in minutes
 EST_ENG_COST = 65 # Hourly rate of an engineer
-INITIAL_INVESTMENT = -500000
+INITIAL_INVESTMENT = -250000
 SUBS = 20000
 MAINTENANCE = 52 * EST_ENG_COST # Estimated one hour a week of maintenance on average
-COST_OF_MISTAKES = ((3*EST_ENG_COST) * 12) # Estimate three engineers on 4 3-hour calls a year
-IQ = (EST_ENG_COST * 12) # Estimate we will save 12 hours a year because of improved quality
+COST_OF_MISTAKES = ((3*EST_ENG_COST) * 18) # Estimate three engineers on 6 3-hour calls a year
+IQ = (EST_ENG_COST * 40) # Estimate we will save 40 hours a year because of improved quality
 
 
 
@@ -68,7 +68,7 @@ async def calc_roi(successful):
     benefits = MS + COST_OF_MISTAKES + IQ # Realtime money saved plus estimated cost of mistakes and quality saved
     initial_investment = -INITIAL_INVESTMENT
     TC = initial_investment + SUBS + MAINTENANCE
-    NB = TC - benefits
+    NB = benefits - TC
     roi = (NB / TC) * 100
     return roi, NB, TC
 
@@ -101,7 +101,7 @@ ansible_job_template_irr_calc {float(irr_calc):.2f}
 ansible_job_template_roi_calc {float(roi):.2f}
 # HELP ansible_job_template_roi_prediction Return on Investment for project
 # TYPE ansible_job_template_roi_prediction gauge
-ansible_job_template_roi_prediction {float(roi * 12):.2f}
+ansible_job_template_roi_prediction {float(roi):.2f}
 
 
     """
