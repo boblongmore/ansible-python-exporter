@@ -15,12 +15,13 @@ AAP_TOKEN = os.getenv('aap_token')
 JOB_ID = 46 # Replace with your job template ID
 API_ENDPOINT=f"/api/controller/v2/workflow_job_templates/{JOB_ID}/workflow_jobs/"
 EST_MANUAL_TIME = 60 # Time to do the task manually in minutes
-EST_ENG_COST = 85 # Hourly rate of an engineer
-INITIAL_INVESTMENT = -200000
-SUBS = 20000
+EST_ENG_COST = 100 # Hourly rate of an engineer
+INITIAL_INVESTMENT = -200000 / 3 # Initial spread out over 3 years
+SUBS = 6000 # Subscription cost for 1 years
 MAINTENANCE = 52 * EST_ENG_COST # Estimated one hour a week of maintenance on average
-COST_OF_MISTAKES = ((3*EST_ENG_COST) * 18) # Estimate three engineers on 6 3-hour calls a year
-IQ = (EST_ENG_COST * 40) # Estimate we will save 40 hours a year because of improved quality
+COST_OF_MISTAKES = ((3*EST_ENG_COST) * 21) # Estimate three engineers on 9 3-hour calls a year
+IQ = (EST_ENG_COST * 160) # Estimate we will save 160 hours a year because of improved quality
+BUSINESS_VALUE = 50000 # Estimated impact of reduced downtime on business value
 
 
 
@@ -33,6 +34,7 @@ metrics_cache = {
     "money_saved": 0.0,
     "irr_calc": 0.0,
     "roi": 0.0,
+    "roi_predict": 0.0,
 }
 
 async def get_job_details(query):
@@ -76,12 +78,21 @@ async def calc_irr(successful):
 
 async def calc_roi(successful):
     MS = await auto_money_saved(successful)
-    benefits = MS + COST_OF_MISTAKES + IQ # Realtime money saved plus estimated cost of mistakes and quality saved
+    benefits = MS + COST_OF_MISTAKES + IQ + BUSINESS_VALUE # Realtime money saved plus estimated cost of mistakes and quality saved
     initial_investment = -INITIAL_INVESTMENT
     TC = initial_investment + SUBS + MAINTENANCE
     NB = benefits - TC
     roi = (NB / TC) * 100
     return roi, NB, TC
+
+async def calc_roi_predict(successful):
+    MS = await auto_money_saved(successful)
+    benefits = (MS * 36) + (COST_OF_MISTAKES * 3) + (IQ * 3) + (BUSINESS_VALUE * 3) # Realtime money saved plus estimated cost of mistakes and quality saved
+    initial_investment = -INITIAL_INVESTMENT * 3
+    TC = initial_investment + (SUBS * 3)  + (MAINTENANCE * 3)
+    NB = benefits - TC
+    roi_predict = (NB / TC) * 100
+    return roi_predict
 
 async def refresh_metrics():
     while True:
@@ -92,6 +103,7 @@ async def refresh_metrics():
             money_saved = await auto_money_saved(successful)
             irr_calc = await calc_irr(successful)
             roi, _, _ = await calc_roi(successful)
+            roi_predict = await calc_roi_predict(successful)
 
             # Update the cache
             metrics_cache["successful"] = successful['count']
@@ -100,6 +112,7 @@ async def refresh_metrics():
             metrics_cache["money_saved"] = money_saved
             metrics_cache["irr_calc"] = irr_calc
             metrics_cache["roi"] = roi
+            metrics_cache["roi_predict"] = roi_predict
 
         except Exception as e:
             print(f"Error refreshing metrics: {e}")
@@ -138,7 +151,7 @@ ansible_job_template_irr_calc {metrics_cache["irr_calc"]:.2f}
 ansible_job_template_roi_calc {metrics_cache["roi"]:.2f}
 # HELP ansible_job_template_roi_prediction Return on Investment for project
 # TYPE ansible_job_template_roi_prediction gauge
-ansible_job_template_roi_prediction {metrics_cache["roi"]:.2f}
+ansible_job_template_roi_prediction {metrics_cache["roi_predict"]:.2f}
 """
 
 if __name__ == "__main__":
